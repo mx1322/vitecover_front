@@ -1,0 +1,101 @@
+services:
+  api:
+    image: ghcr.io/saleor/saleor:latest
+    ports:
+      - 8000:8000
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    stdin_open: true
+    tty: true
+    depends_on:
+      - db
+      - redis
+    volumes:
+      # shared volume between worker and api for media
+      - saleor-media:/app/media
+    env_file:
+      - ./config/common.env
+      - ./config/backend.env
+    environment:
+      - DASHBOARD_URL=http://localhost:9001/
+      - ALLOWED_HOSTS=localhost,api
+
+  dashboard:
+    image: ghcr.io/saleor/saleor-dashboard:latest
+    ports:
+      - 9001:80
+    restart: unless-stopped
+
+  storefront:
+    image: vitecover_saleor-storefront:latest
+    container_name: saleor-storefront
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_SALEOR_API_URL=http://api:8000/graphql/
+      - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
+    depends_on:
+      - api
+    networks:
+      - saleor-backend-tier
+
+  db:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    volumes:
+      - saleor-db:/var/lib/postgresql/data
+      - ./config/replica_user.sql:/docker-entrypoint-initdb.d/replica_user.sql:ro,z
+    environment:
+      - POSTGRES_USER=saleor
+      - POSTGRES_PASSWORD=saleor
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    volumes:
+      - saleor-redis:/data
+
+  worker:
+    image: ghcr.io/saleor/saleor:latest
+    command: celery -A saleor --app=saleor.celeryconf:app worker --loglevel=info -B
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    env_file:
+      - ./config/common.env
+      - ./config/backend.env
+    depends_on:
+      - redis
+      - mailpit
+    volumes:
+      - saleor-media:/app/media
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - 1025:1025 # smtp server
+      - 8025:8025 # web ui. Visit http://localhost:8025/ to check emails
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+
+volumes:
+  saleor-db:
+    driver: local
+  saleor-redis:
+    driver: local
+  saleor-media:
+
+networks:
+  saleor-backend-tier:
+    driver: bridge 
