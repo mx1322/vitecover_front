@@ -35,8 +35,8 @@ jobs:
         file: ./saleor-storefront/Dockerfile # Path to the Dockerfile
         push: true # Set to true to enable pushing the image
         tags: | # Defines the tags for the Docker image
-          ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:latest # Pushes with the 'latest' tag
-          ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:${{ github.sha }} # Pushes with a unique tag based on commit SHA
+          ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:latest
+          ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:${{ github.sha }}
         build-args: | # Passes build arguments
           NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ # API URL used during build time
         cache-from: type=gha,scope=frontend-build-${{ github.ref_name }} # Pulls layers from GitHub Actions cache
