@@ -10,27 +10,6 @@ type GraphQLErrorResponse = {
 
 type GraphQLRespone<T> = { data: T } | GraphQLErrorResponse;
 
-async function fetchWithRetry(
-	url: string,
-	options: RequestInit,
-	retries = 5,
-	backoff = 300,
-): Promise<Response> {
-	try {
-		const response = await fetch(url, options);
-		if (!response.ok) {
-			throw new HTTPError(response);
-		}
-		return response;
-	} catch (error) {
-		if (retries > 0) {
-			await new Promise((resolve) => setTimeout(resolve, backoff));
-			return fetchWithRetry(url, options, retries - 1, backoff * 2);
-		}
-		throw error;
-	}
-}
-
 export async function executeGraphQL<Result, Variables>(
 	operation: TypedDocumentString<Result, Variables>,
 	options: {
@@ -59,7 +38,7 @@ export async function executeGraphQL<Result, Variables>(
 
 	const response = withAuth
 		? await (await getServerAuthClient()).fetchWithAuth(process.env.NEXT_PUBLIC_SALEOR_API_URL, input)
-		: await fetchWithRetry(process.env.NEXT_PUBLIC_SALEOR_API_URL, input);
+		: await fetch(process.env.NEXT_PUBLIC_SALEOR_API_URL, input);
 
 	if (!response.ok) {
 		console.error(input.body);
