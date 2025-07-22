@@ -1,6 +1,6 @@
 # .github/workflows/build-frontend.yml
 
-name: Build Frontend Docker Image Only (Cached) # Workflow name updated to indicate build-only with caching
+name: Build and Push Frontend Docker Image # Workflow 名称已更新，表示编译并推送
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - main # Triggers the workflow on pushes to the main branch
 
 jobs:
-  build-only:
+  build-and-push: # Job 名称已更新
     runs-on: ubuntu-latest # Uses the latest Ubuntu runner
 
     steps:
@@ -21,12 +21,21 @@ jobs:
         # Enables GitHub Actions cache backend
         buildkitd-flags: --debug # Optional: for debugging Buildx caching issues
 
-    - name: Build frontend image with caching # Step 3: Builds the frontend image and utilizes caching
+    - name: Log in to Docker Hub # Step 3: Logs in to Docker Hub using secrets
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }} # Docker Hub username from GitHub Secrets
+        password: ${{ secrets.DOCKER_HUB_TOKEN }} # Docker Hub access token from GitHub Secrets
+
+    - name: Build and push frontend image # Step 4: Builds and pushes the frontend image with caching
       uses: docker/build-push-action@v5
       with:
         context: ./saleor-storefront # Build context for the Dockerfile
         file: ./saleor-storefront/Dockerfile # Path to the Dockerfile
-        push: false # Set to false to only build, not push
+        push: true # Set to true to enable pushing the image
+        tags: | # Defines the tags for the Docker image
+          ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:latest # Pushes with the 'latest' tag
+          ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:${{ github.sha }} # Pushes with a unique tag based on commit SHA
         build-args: | # Passes build arguments
           NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ # API URL used during build time
         cache-from: type=gha,scope=frontend-build-${{ github.ref_name }} # Pulls layers from GitHub Actions cache
