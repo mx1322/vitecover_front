@@ -1,32 +1,33 @@
 # .github/workflows/build-frontend.yml
 
-name: Build Frontend Docker Image Only # Workflow 的名称已更新，表示只编译
+name: Build Frontend Docker Image Only (Cached) # Workflow name updated to indicate build-only with caching
 
 on:
   push:
     branches:
-      - main # 当代码推送到 main 分支时触发此 workflow
+      - main # Triggers the workflow on pushes to the main branch
 
 jobs:
-  build-only: # Job 名称已更新
-    runs-on: ubuntu-latest # 使用最新的 Ubuntu 运行器
+  build-only:
+    runs-on: ubuntu-latest # Uses the latest Ubuntu runner
 
     steps:
-    - name: Checkout repository # 步骤1: 检出代码
+    - name: Checkout repository # Step 1: Checks out the repository code
       uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx # 步骤2: 设置 Docker Buildx，用于构建多平台镜像
+    - name: Set up Docker Buildx # Step 2: Sets up Docker Buildx for multi-platform builds and advanced caching
       uses: docker/setup-buildx-action@v3
+      with:
+        # Enables GitHub Actions cache backend
+        buildkitd-flags: --debug # Optional: for debugging Buildx caching issues
 
-    # 移除了登录 Docker Hub 的步骤，因为不再需要推送
-
-    - name: Build frontend image # 步骤3: 只编译前端镜像，不推送
+    - name: Build frontend image with caching # Step 3: Builds the frontend image and utilizes caching
       uses: docker/build-push-action@v5
       with:
-        context: ./saleor-storefront # Dockerfile 的构建上下文，指向 saleor-storefront 目录
-        file: ./saleor-storefront/Dockerfile # Dockerfile 的路径
-        push: false # 设置为 false，表示只编译不推送
-        # 移除了 tags，因为不推送就不需要标签
-        build-args: | # 传递构建参数，NEXT_PUBLIC_SALEOR_API_URL 在 Dockerfile 中是 ARG
-          NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ # 构建时使用的 API URL，这只是一个占位符，实际部署时会被覆盖
-
+        context: ./saleor-storefront # Build context for the Dockerfile
+        file: ./saleor-storefront/Dockerfile # Path to the Dockerfile
+        push: false # Set to false to only build, not push
+        build-args: | # Passes build arguments
+          NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ # API URL used during build time
+        cache-from: type=gha,scope=frontend-build-${{ github.ref_name }} # Pulls layers from GitHub Actions cache
+        cache-to: type=gha,mode=max,scope=frontend-build-${{ github.ref_name }} # Pushes built layers to GitHub Actions cache, mode=max caches as many layers as possible
