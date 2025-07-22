@@ -41,13 +41,6 @@ export async function executeGraphQL<Result, Variables>(
 		: await fetch(process.env.NEXT_PUBLIC_SALEOR_API_URL, input);
 
 	if (!response.ok) {
-		const body = await (async () => {
-			try {
-				return await response.text();
-			} catch {
-				return "";
-			}
-		})();
 		console.error(input.body);
 		throw new HTTPError(response);
 	}
