@@ -19,7 +19,12 @@ export async function executeGraphQL<Result, Variables>(
 		withAuth?: boolean;
 	} & (Variables extends Record<string, never> ? { variables?: never } : { variables: Variables }),
 ): Promise<Result> {
-	invariant(process.env.NEXT_PUBLIC_SALEOR_API_URL, "Missing NEXT_PUBLIC_SALEOR_API_URL env variable");
+	const saleorApiUrl =
+		typeof window === "undefined"
+			? process.env.SALEOR_API_URL
+			: process.env.NEXT_PUBLIC_SALEOR_API_URL;
+	invariant(saleorApiUrl, "Missing SALEOR_API_URL or NEXT_PUBLIC_SALEOR_API_URL env variable");
+
 	const { variables, headers, cache, revalidate, withAuth = true } = options;
 
 	const input = {
@@ -37,8 +42,8 @@ export async function executeGraphQL<Result, Variables>(
 	};
 
 	const response = withAuth
-		? await (await getServerAuthClient()).fetchWithAuth(process.env.NEXT_PUBLIC_SALEOR_API_URL, input)
-		: await fetch(process.env.NEXT_PUBLIC_SALEOR_API_URL, input);
+		? await (await getServerAuthClient()).fetchWithAuth(saleorApiUrl, input)
+		: await fetch(saleorApiUrl, input);
 
 	if (!response.ok) {
 		console.error(input.body);

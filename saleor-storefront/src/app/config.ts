@@ -4,8 +4,11 @@ import { invariant } from "ts-invariant";
 
 export const ProductsPerPage = 12;
 
-const saleorApiUrl = process.env.NEXT_PUBLIC_SALEOR_API_URL;
-invariant(saleorApiUrl, "Missing NEXT_PUBLIC_SALEOR_API_URL env variable");
+const saleorApiUrl =
+	typeof window === "undefined"
+		? process.env.SALEOR_API_URL
+		: process.env.NEXT_PUBLIC_SALEOR_API_URL;
+invariant(saleorApiUrl, "Missing SALEOR_API_URL or NEXT_PUBLIC_SALEOR_API_URL env variable");
 
 export const getServerAuthClient = async () => {
 	const nextServerCookiesStorage = await getNextServerCookiesStorageAsync();
