@@ -49,7 +49,7 @@ export async function executeGraphQL<Result, Variables>(
 			}
 		})();
 		console.error(input.body);
-		throw new HTTPError(response, body);
+		throw new HTTPError(response);
 	}
 
 	const body = (await response.json()) as GraphQLRespone<Result>;
@@ -70,10 +70,12 @@ class GraphQLError extends Error {
 	}
 }
 class HTTPError extends Error {
-	constructor(response: Response, body: string) {
-		const message = `HTTP error ${response.status}: ${response.statusText}\n${body}`;
+	response: Response;
+	constructor(response: Response) {
+		const message = `HTTP error ${response.status}: ${response.statusText}}`;
 		super(message);
 		this.name = this.constructor.name;
+		this.response = response;
 		Object.setPrototypeOf(this, new.target.prototype);
 	}
 }
