@@ -126,9 +126,13 @@ RUN vips --version
 # Ensure these environment variables are correctly passed from docker-compose.yml's 'environment' section
 # These will be set at runtime, overriding any ENV set in the Dockerfile if present.
 
-# --- FIX: Changed UID/GID to be within typical system user range (0-999) ---
-RUN addgroup --system --gid 999 nodejs # Changed GID to 999
-RUN adduser --system --uid 999 --ingroup nodejs nextjs # Changed UID to 999 and assigned to nodejs group
+# --- FIX: More robust user/group creation and immediate verification ---
+# Create the 'nodejs' group with a specific GID
+RUN groupadd --system --gid 999 nodejs
+# Create the 'nextjs' user with a specific UID and add to the 'nodejs' group
+RUN useradd --system --uid 999 --gid nodejs --create-home --shell /bin/bash nextjs
+# Verify the user exists immediately after creation. This will fail the build if not.
+RUN id nextjs
 # --- END FIX ---
 
 # COPY --from=builder /app/public ./public # Uncomment if you need to copy public assets
