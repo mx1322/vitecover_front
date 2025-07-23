@@ -1,9 +1,10 @@
+# Use a slim Node.js image based on Debian for better libvips support
 FROM node:20-slim AS base
 
-# Install dependencies only when needed
+# Stage 1: deps - Install Node.js dependencies and build-time system dependencies
 FROM base AS deps
 # For Debian/Ubuntu based images, libc6-compat is usually not needed or handled differently.
-# RUN apk add --no-cache libc6-compat # Remove or comment out this line
+# RUN apk add --no-cache libc6-compat # This line is for Alpine, commented out for Debian
 
 # --- REQUIRED: Install libvips and its dependencies for Next.js Image Optimization ---
 # These are crucial for the 'sharp' library used by Next.js image optimizer.
@@ -39,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjxl-dev \
     libavif-dev \
     libvips-tools \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* # Clean up apt cache to reduce image size
 
 # --- END REQUIRED ---
 
@@ -52,7 +53,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm i --frozen-lockfile --prefer-offline
 
-# Rebuild the source code only when needed
+# Stage 2: builder - Build the Next.js application
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -64,8 +65,8 @@ COPY . .
 # ENV NEXT_TELEMETRY_DISABLED 1
 
 ENV NEXT_OUTPUT=standalone
-# Ensure these ARGs and ENVs are correctly passed from docker-compose.yml
-# Remove default value for SALEOR_API_URL ARG, so it MUST be passed from build-args
+# Ensure these ARGs are correctly passed from docker-compose.yml or CI/CD build-args.
+# Removing default values here means they MUST be provided externally.
 ARG SALEOR_API_URL
 ENV SALEOR_API_URL=${SALEOR_API_URL}
 ARG NEXT_PUBLIC_SALEOR_API_URL
@@ -87,7 +88,7 @@ RUN corepack enable
 
 RUN pnpm build
 
-# Production image, copy all the files and run next
+# Stage 3: runner - Final production image
 FROM base AS runner
 WORKDIR /app
 
@@ -114,20 +115,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     liborc-0.4-0 \
     libgif7 \
     libvips-tools \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* # Clean up apt cache to reduce image size
 # --- END NEW ---
 
-# --- NEW: Verify vips installation in the runner image ---
+# --- Verify vips installation in the runner image ---
+# This command will output the vips version to the build logs, confirming its presence.
 RUN vips --version
 # --- END NEW ---
 
-# Ensure these ARGs and ENVs are correctly passed from docker-compose.yml
-# This ENV will be set at runtime by docker-compose environment section
+# Ensure these environment variables are correctly passed from docker-compose.yml's 'environment' section
+# These will be set at runtime, overriding any ENV set in the Dockerfile if present.
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# COPY --from=builder /app/public ./public
+# COPY --from=builder /app/public ./public # Uncomment if you need to copy public assets
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -138,7 +140,7 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-USER nextjs
+USER nextjs # Run the application as the non-root 'nextjs' user
 
 
-CMD ["node", "server.js"]
+CMD ["node", "server.js"] # Command to start the Next.js server
