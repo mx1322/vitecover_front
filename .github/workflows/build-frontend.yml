@@ -5,7 +5,8 @@ name: Build and Push Frontend Docker Image # Workflow name
 on:
   push:
     branches:
-      - main # Triggers the workflow on pushes to the main branch
+      - main
+      - dev# Triggers the workflow on pushes to the main branch
   workflow_dispatch: # Allows manual triggering from GitHub UI
 
 jobs:
@@ -37,6 +38,8 @@ jobs:
         tags: | # Defines the tags for the Docker image
           ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:latest
           ${{ secrets.DOCKER_HUB_USERNAME }}/vitecover-frontend:${{ github.sha }}
+          # Conditionally add 'latest-dev' tag if the branch is 'dev'
+          ${{ github.ref_name == 'dev' && format('{0}/vitecover-frontend:latest-dev', secrets.DOCKER_HUB_USERNAME) || '' }}
         build-args: | # Passes build arguments
           NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ # API URL used during build time
         cache-from: type=gha,scope=frontend-build-${{ github.ref_name }} # Pulls layers from GitHub Actions cache

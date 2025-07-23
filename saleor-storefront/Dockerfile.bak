@@ -1,56 +1,53 @@
-FROM node:20-slim AS base
+FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# For Debian/Ubuntu based images, libc6-compat is usually not needed or handled differently.
-# RUN apk add --no-cache libc6-compat # Remove or comment out this line
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 
 # --- REQUIRED: Install libvips and its dependencies for Next.js Image Optimization ---
 # These are crucial for the 'sharp' library used by Next.js image optimizer.
-# Using apt-get for Debian/Ubuntu based images.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libvips-dev \
-    build-essential \
+# This section was missing in your provided Dockerfile.
+RUN apk add --no-cache \
+    vips-dev \
+    build-base \
+    autoconf \
+    automake \
+    libtool \
+    nasm \
     git \
-    libjpeg-dev \
-    libcairo2-dev \
-    libgif-dev \
-    libtiff-dev \
-    libopenjp2-7-dev \
-    libpoppler-glib-dev \
+    jpeg-dev \
+    cairo-dev \
+    giflib-dev \
+    tiff-dev \
+    openjpeg-dev \
+    poppler-dev \
     libwebp-dev \
     libxml2-dev \
-    libfftw3-dev \
-    liblcms2-dev \
-    liborc-0.4-dev \
-    libglib2.0-dev \
-    libpango1.0-dev \
-    libfontconfig1-dev \
-    libfreetype6-dev \
-    libgdk-pixbuf2.0-dev \
-    libharfbuzz-dev \
-    libfribidi-dev \
-    libgraphite2-dev \
-    zlib1g-dev \
+    fftw-dev \
+    lcms2-dev \
+    orc-dev \
+    glib-dev \
+    pango-dev \
+    fontconfig-dev \
+    freetype-dev \
+    gdk-pixbuf-dev \
+    harfbuzz-dev \
+    fribidi-dev \
+    graphite2-dev \
+    zlib-dev \
     libpng-dev \
     libexif-dev \
-    librsvg2-dev \
+    librsvg-dev \
     libheif-dev \
     libjxl-dev \
-    libavif-dev \
-    # Install 'vips' command-line tool separately if it's not part of libvips-dev
-    # In Debian/Ubuntu, the 'vips' command is typically part of the 'libvips-tools' package
-    libvips-tools \
-    # Clean up apt cache to reduce image size
-    && rm -rf /var/lib/apt/lists/*
-
+    libavif-dev
 # --- END REQUIRED ---
 
 WORKDIR /app
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-# corepack enable is usually for pnpm/yarn/npm in package.json, keep it.
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
@@ -68,7 +65,6 @@ COPY . .
 # ENV NEXT_TELEMETRY_DISABLED 1
 
 ENV NEXT_OUTPUT=standalone
-# Ensure these ARGs and ENVs are correctly passed from docker-compose.yml
 ARG SALEOR_API_URL=http://localhost:8000/graphql/
 ENV SALEOR_API_URL=${SALEOR_API_URL}
 ARG NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
@@ -98,7 +94,6 @@ ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-# Ensure these ARGs and ENVs are correctly passed from docker-compose.yml
 ARG NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
 ENV NEXT_PUBLIC_SALEOR_API_URL=${NEXT_PUBLIC_SALEOR_API_URL}
 ARG NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
@@ -117,8 +112,8 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/wait-for-api.js ./
 
 USER nextjs
-
 
 CMD ["node", "server.js"]
