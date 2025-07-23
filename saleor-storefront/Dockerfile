@@ -65,9 +65,13 @@ COPY . .
 
 ENV NEXT_OUTPUT=standalone
 # Ensure these ARGs and ENVs are correctly passed from docker-compose.yml
+<<<<<<< HEAD
 # Remove default value for SALEOR_API_URL ARG, so it MUST be passed from build-args
 ARG SALEOR_API_URL
 ENV SALEOR_API_URL=${SALEOR_API_URL}
+=======
+# Use ARG without default value here so it MUST be passed from docker-compose build-args
+>>>>>>> 03369778ec58930f861b589fbf4ff50fdec04149
 ARG NEXT_PUBLIC_SALEOR_API_URL
 ENV NEXT_PUBLIC_SALEOR_API_URL=${NEXT_PUBLIC_SALEOR_API_URL}
 ARG NEXT_PUBLIC_STOREFRONT_URL
@@ -95,7 +99,11 @@ ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
+<<<<<<< HEAD
 # --- Install libvips runtime dependencies in the final runner image ---
+=======
+# --- NEW: Install libvips runtime dependencies in the final runner image ---
+>>>>>>> 03369778ec58930f861b589fbf4ff50fdec04149
 # These are the minimal set of packages required for 'sharp' to run correctly.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libvips42 \
@@ -113,16 +121,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenjp2-7 \
     liborc-0.4-0 \
     libgif7 \
+<<<<<<< HEAD
+=======
+    # Include libvips-tools for the 'vips' command-line utility for debugging, if desired
+>>>>>>> 03369778ec58930f861b589fbf4ff50fdec04149
     libvips-tools \
     && rm -rf /var/lib/apt/lists/*
 # --- END NEW ---
 
+<<<<<<< HEAD
 # --- NEW: Verify vips installation in the runner image ---
 RUN vips --version
 # --- END NEW ---
 
 # Ensure these ARGs and ENVs are correctly passed from docker-compose.yml
 # This ENV will be set at runtime by docker-compose environment section
+=======
+# Ensure these ARGs and ENVs are correctly passed from docker-compose.yml
+# This ENV will be set at runtime by docker-compose environment section
+# ARG NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/ # Removed default ARG value
+# ENV NEXT_PUBLIC_SALEOR_API_URL=${NEXT_PUBLIC_SALEOR_API_URL} # This will be overridden by docker-compose
+# ARG NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000 # Removed default ARG value
+# ENV NEXT_PUBLIC_STOREFRONT_URL=${NEXT_PUBLIC_STOREFRONT_URL} # This will be overridden by docker-compose
+>>>>>>> 03369778ec58930f861b589fbf4ff50fdec04149
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
