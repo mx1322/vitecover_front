@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
 
   storefront:
-    image: mx1322/vitecover-frontend:latest
+    image: mx1322/vitecover-frontend:latest-dev
     container_name: saleor-storefront
     ports:
       - "3000:3000"
