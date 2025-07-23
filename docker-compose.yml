@@ -28,7 +28,9 @@ services:
     restart: unless-stopped
 
   storefront:
-    image: mx1322/vitecover-frontend:latest
+    #Use 'build' to prioritize local image building from the Dockerfile
+    build: ./saleor-storefront
+    #image: mx1322/vitecover-frontend:latest
     container_name: saleor-storefront
     ports:
       - "3000:3000"
@@ -37,8 +39,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - NEXT_PUBLIC_SALEOR_API_URL=http://localhost:8000/graphql/
-      - SALEOR_API_URL=http://host.docker.internal:8000/graphql/
+      - NEXT_PUBLIC_SALEOR_API_URL=http://api:8000/graphql/
       - NEXT_PUBLIC_STOREFRONT_URL=http://localhost:3000
     depends_on:
       - api
