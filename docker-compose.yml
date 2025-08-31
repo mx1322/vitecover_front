@@ -26,7 +26,7 @@ services:
       - 9001:80
     restart: unless-stopped
     environment:
-      - API_URL=http://api:8000/graphql/
+      - API_URL=http://192.168.3.60:8000/graphql/
       - APP_MOUNT_URI=/dashboard/
 
   db:
