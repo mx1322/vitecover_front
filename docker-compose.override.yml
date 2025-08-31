@@ -1,0 +1,22 @@
+services:
+  db:
+    volumes:
+      - saleor-db:/var/lib/postgresql/data
+
+  redis:
+    volumes:
+      - saleor-redis:/data
+
+  api:
+    volumes:
+      - saleor-media:/app/media
+
+  worker:
+    volumes:
+      - saleor-worker:/app/data
+
+volumes:
+  saleor-db:
+  saleor-redis:
+  saleor-media:
+  saleor-worker:
